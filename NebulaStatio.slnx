@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Nebula/Nebula.csproj" />
+  <Project Path="Statio/Statio.csproj" />
+</Solution>

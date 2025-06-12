@@ -1,5 +1,8 @@
+using Microsoft.AspNetCore.ResponseCompression;
 using Nebula.Pages;
 using Statio.Components;
+using Statio.Hubs;
+using Statio.Services;
 
 namespace Statio
 {
@@ -14,7 +17,16 @@ namespace Statio
                 .AddInteractiveServerComponents()
                 .AddInteractiveWebAssemblyComponents();
 
+            builder.Services.AddSignalR();
+            builder.Services.AddResponseCompression(opts =>
+            {
+                opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+                    ["application/octet-stream"]);
+            });
+            builder.Services.AddHostedService<Worker>();
+
             var app = builder.Build();
+            app.UseResponseCompression();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
@@ -37,6 +49,8 @@ namespace Statio
                 .AddInteractiveServerRenderMode()
                 .AddInteractiveWebAssemblyRenderMode()
                 .AddAdditionalAssemblies(typeof(Nebula._Imports).Assembly);
+
+            app.MapHub<PerformanceCounterHub>("/performancecounterhub");
 
             app.Run();
         }

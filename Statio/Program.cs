@@ -1,43 +1,44 @@
-using System.Text.Json.Serialization;
+using Nebula.Pages;
+using Statio.Components;
 
-namespace Statio;
-
-public class Program
+namespace Statio
 {
-    public static void Main(string[] args)
+    public class Program
     {
-        var builder = WebApplication.CreateSlimBuilder(args);
-
-        builder.Services.ConfigureHttpJsonOptions(options =>
+        public static void Main(string[] args)
         {
-            options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
-        });
+            var builder = WebApplication.CreateBuilder(args);
 
-        var app = builder.Build();
+            // Add services to the container.
+            builder.Services.AddRazorComponents()
+                .AddInteractiveServerComponents()
+                .AddInteractiveWebAssemblyComponents();
 
-        var sampleTodos = new Todo[] {
-            new(1, "Walk the dog"),
-            new(2, "Do the dishes", DateOnly.FromDateTime(DateTime.Now)),
-            new(3, "Do the laundry", DateOnly.FromDateTime(DateTime.Now.AddDays(1))),
-            new(4, "Clean the bathroom"),
-            new(5, "Clean the car", DateOnly.FromDateTime(DateTime.Now.AddDays(2)))
-        };
+            var app = builder.Build();
 
-        var todosApi = app.MapGroup("/todos");
-        todosApi.MapGet("/", () => sampleTodos);
-        todosApi.MapGet("/{id}", (int id) =>
-            sampleTodos.FirstOrDefault(a => a.Id == id) is { } todo
-                ? Results.Ok(todo)
-                : Results.NotFound());
+            // Configure the HTTP request pipeline.
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseWebAssemblyDebugging();
+            }
+            else
+            {
+                app.UseExceptionHandler("/Error");
+                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+                app.UseHsts();
+            }
 
-        app.Run();
+            app.UseHttpsRedirection();
+
+            app.UseAntiforgery();
+
+            app.MapStaticAssets();
+            app.MapRazorComponents<App>()
+                .AddInteractiveServerRenderMode()
+                .AddInteractiveWebAssemblyRenderMode()
+                .AddAdditionalAssemblies(typeof(Nebula._Imports).Assembly);
+
+            app.Run();
+        }
     }
-}
-
-public record Todo(int Id, string? Title, DateOnly? DueBy = null, bool IsComplete = false);
-
-[JsonSerializable(typeof(Todo[]))]
-internal partial class AppJsonSerializerContext : JsonSerializerContext
-{
-
 }
